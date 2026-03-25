@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor the Whituation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-card: #131a2b;
+            --bg-card-hover: #1a2340;
+            --border: #1e2a45;
+            --text-primary: #e2e8f0;
+            --text-secondary: #8892a8;
+            --text-muted: #5a6478;
+            --green: #22c55e;
+            --green-bg: rgba(34, 197, 94, 0.1);
+            --yellow: #eab308;
+            --yellow-bg: rgba(234, 179, 8, 0.1);
+            --red: #ef4444;
+            --red-bg: rgba(239, 68, 68, 0.1);
+            --blue: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Overall assessment banner */
+        .assessment {
+            max-width: 1200px;
+            margin: 0 auto 32px auto;
+            padding: 20px 28px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .assessment.critical { background: var(--red-bg); border-color: var(--red); }
+        .assessment.elevated { background: var(--yellow-bg); border-color: var(--yellow); }
+        .assessment.caution { background: rgba(234, 179, 8, 0.05); border-color: #78650a; }
+        .assessment.stable { background: var(--green-bg); border-color: var(--green); }
+
+        .assessment-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .critical .assessment-dot { background: var(--red); }
+        .elevated .assessment-dot { background: var(--yellow); }
+        .caution .assessment-dot { background: var(--yellow); opacity: 0.7; }
+        .stable .assessment-dot { background: var(--green); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .assessment-text {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .assessment-meta {
+            margin-left: auto;
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+
+        .refresh-btn:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
+        .refresh-btn.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Category sections */
+        .category {
+            max-width: 1200px;
+            margin: 0 auto 28px auto;
+        }
+
+        .category-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        /* Metric cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: background 0.2s;
+            cursor: default;
+            position: relative;
+        }
+
+        .card:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .card-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .zone-badge {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .zone-badge.green { background: var(--green); box-shadow: 0 0 8px rgba(34, 197, 94, 0.4); }
+        .zone-badge.yellow { background: var(--yellow); box-shadow: 0 0 8px rgba(234, 179, 8, 0.4); }
+        .zone-badge.red { background: var(--red); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+
+        .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            letter-spacing: -1px;
+        }
+
+        .card-value.green { color: var(--green); }
+        .card-value.yellow { color: var(--yellow); }
+        .card-value.red { color: var(--red); }
+
+        .card-unit {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .card-chart {
+            width: 100%;
+            height: 80px;
+            margin-bottom: 12px;
+        }
+
+        .card-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .card-date {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .card-source {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .card-source a {
+            color: var(--blue);
+            text-decoration: none;
+            opacity: 0.7;
+        }
+
+        .card-source a:hover { opacity: 1; }
+
+        .card-freq {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            margin-left: 8px;
+        }
+
+        /* History notes tooltip */
+        .history-notes {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .history-notes-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .history-note {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+        }
+
+        .history-note span {
+            color: var(--text-muted);
+        }
+
+        /* Threshold legend */
+        .threshold-bar {
+            display: flex;
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+            gap: 2px;
+        }
+
+        .threshold-segment {
+            flex: 1;
+            border-radius: 2px;
+        }
+
+        .threshold-segment.green { background: var(--green); opacity: 0.6; }
+        .threshold-segment.yellow { background: var(--yellow); opacity: 0.6; }
+        .threshold-segment.red { background: var(--red); opacity: 0.6; }
+
+        .threshold-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+        }
+
+        .threshold-label {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Loading state */
+        .loading-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            gap: 16px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Error state */
+        .error-banner {
+            max-width: 1200px;
+            margin: 0 auto 24px auto;
+            padding: 16px 20px;
+            background: var(--red-bg);
+            border: 1px solid var(--red);
+            border-radius: 8px;
+            color: var(--red);
+            font-size: 14px;
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .cards { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .cards { grid-template-columns: 1fr; }
+            body { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Monitor the Whituation</h1>
+        <div class="subtitle">Strait of Hormuz Crisis — Economic Impact Dashboard</div>
+    </div>
+
+    <div id="error-banner" class="error-banner"></div>
+    <div id="assessment"></div>
+    <div id="content">
+        <div class="loading-screen">
+            <div class="spinner"></div>
+            <div class="loading-text">Fetching latest data...</div>
+        </div>
+    </div>
+
+    <script>
+        // Metric ordering and grouping
+        const CATEGORIES = [
+            {
+                name: "Energy Markets",
+                keys: ["brent_crude", "crack_spread", "calendar_spread"]
+            },
+            {
+                name: "Economic Stress",
+                keys: ["industrial_production", "eu_natural_gas", "capacity_utilization"]
+            },
+            {
+                name: "Financial Contagion",
+                keys: ["hy_credit_spread", "jobless_claims", "inflation_expectations"]
+            }
+        ];
+
+        const SOURCES = {
+            brent_crude: { label: "FRED: DCOILBRENTEU", url: "https://fred.stlouisfed.org/series/DCOILBRENTEU", freq: "Daily" },
+            crack_spread: { label: "FRED (calculated)", url: "https://fred.stlouisfed.org/series/DCOILBRENTEU", freq: "Daily" },
+            calendar_spread: { label: "Yahoo Finance", url: "https://finance.yahoo.com/quote/BZ=F/", freq: "Daily" },
+            industrial_production: { label: "FRED: INDPRO", url: "https://fred.stlouisfed.org/series/INDPRO", freq: "Monthly" },
+            eu_natural_gas: { label: "FRED: PNGASEUUSDM", url: "https://fred.stlouisfed.org/series/PNGASEUUSDM", freq: "Monthly" },
+            capacity_utilization: { label: "FRED: TCU", url: "https://fred.stlouisfed.org/series/TCU", freq: "Monthly" },
+            hy_credit_spread: { label: "FRED: BAMLH0A0HYM2", url: "https://fred.stlouisfed.org/series/BAMLH0A0HYM2", freq: "Daily" },
+            jobless_claims: { label: "FRED: ICSA", url: "https://fred.stlouisfed.org/series/ICSA", freq: "Weekly" },
+            inflation_expectations: { label: "FRED: MICH", url: "https://fred.stlouisfed.org/series/MICH", freq: "Monthly" },
+        };
+
+        let charts = {};
+
+        async function fetchData() {
+            const resp = await fetch("/api/data");
+            if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
+            return resp.json();
+        }
+
+        async function refreshData() {
+            const btn = document.querySelector(".refresh-btn");
+            if (btn) { btn.classList.add("loading"); btn.textContent = "Refreshing..."; }
+            try {
+                await fetch("/api/refresh", { method: "POST" });
+                await loadDashboard();
+            } catch (e) {
+                showError(e.message);
+            } finally {
+                if (btn) { btn.classList.remove("loading"); btn.textContent = "Refresh Data"; }
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById("error-banner");
+            el.textContent = msg;
+            el.style.display = "block";
+        }
+
+        function formatValue(value, unit) {
+            if (value === null || value === undefined) return "—";
+            if (unit === "$/barrel") return "$" + value.toFixed(2);
+            if (unit === "$/MMBtu") return "$" + value.toFixed(2);
+            if (unit === "%") return value.toFixed(1) + "%";
+            if (unit === "basis points") return Math.round(value) + " bps";
+            if (unit === "thousands") return value.toFixed(0) + "K";
+            if (unit.startsWith("Index")) return value.toFixed(1);
+            return value.toFixed(2);
+        }
+
+        const ZONE_COLORS = {
+            green: { solid: "rgb(34, 197, 94)", fill: "rgba(34, 197, 94, 0.25)" },
+            yellow: { solid: "rgb(234, 179, 8)", fill: "rgba(234, 179, 8, 0.25)" },
+            red: { solid: "rgb(239, 68, 68)", fill: "rgba(239, 68, 68, 0.25)" },
+        };
+
+        function getZoneColor(zone) {
+            return ZONE_COLORS[zone]?.solid || ZONE_COLORS.red.solid;
+        }
+
+        function buildAssessment(overall, lastUpdated) {
+            const el = document.getElementById("assessment");
+            const time = new Date(lastUpdated).toLocaleString();
+            el.innerHTML = `
+                <div class="assessment ${overall.level}">
+                    <div class="assessment-dot"></div>
+                    <div class="assessment-text">${overall.label}</div>
+                    <div class="assessment-meta">
+                        <div>Updated: ${time}</div>
+                        <button class="refresh-btn" onclick="refreshData()">Refresh Data</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildThresholdBar(thresholds) {
+            const dir = thresholds.direction;
+            if (dir === "up_is_bad") {
+                return `
+                    <div class="threshold-bar">
+                        <div class="threshold-segment green"></div>
+                        <div class="threshold-segment yellow"></div>
+                        <div class="threshold-segment red"></div>
+                    </div>
+                    <div class="threshold-labels">
+                        <span class="threshold-label">0</span>
+                        <span class="threshold-label">${thresholds.green_max}</span>
+                        <span class="threshold-label">${thresholds.yellow_max}</span>
+                        <span class="threshold-label"></span>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="threshold-bar">
+                        <div class="threshold-segment red"></div>
+                        <div class="threshold-segment yellow"></div>
+                        <div class="threshold-segment green"></div>
+                    </div>
+                    <div class="threshold-labels">
+                        <span class="threshold-label"></span>
+                        <span class="threshold-label">${thresholds.yellow_min}</span>
+                        <span class="threshold-label">${thresholds.green_min}</span>
+                        <span class="threshold-label"></span>
+                    </div>
+                `;
+            }
+        }
+
+        function buildHistoryNotes(notes) {
+            if (!notes || Object.keys(notes).length === 0) return "";
+            let html = `<div class="history-notes"><div class="history-notes-title">Historical Context</div>`;
+            for (const [date, note] of Object.entries(notes)) {
+                html += `<div class="history-note"><span>${date}:</span> ${note}</div>`;
+            }
+            html += "</div>";
+            return html;
+        }
+
+        function createSparkline(canvas, data, zone, thresholds) {
+            const ctx = canvas.getContext("2d");
+            const color = getZoneColor(zone);
+
+            const labels = data.map(d => d.date);
+            const values = data.map(d => d.value);
+
+            // Add threshold lines as annotations
+            const annotations = {};
+            if (thresholds.direction === "up_is_bad") {
+                annotations.greenLine = {
+                    type: "line", yMin: thresholds.green_max, yMax: thresholds.green_max,
+                    borderColor: "rgba(34, 197, 94, 0.3)", borderWidth: 1, borderDash: [4, 4]
+                };
+                annotations.yellowLine = {
+                    type: "line", yMin: thresholds.yellow_max, yMax: thresholds.yellow_max,
+                    borderColor: "rgba(239, 68, 68, 0.3)", borderWidth: 1, borderDash: [4, 4]
+                };
+            } else {
+                annotations.greenLine = {
+                    type: "line", yMin: thresholds.green_min, yMax: thresholds.green_min,
+                    borderColor: "rgba(34, 197, 94, 0.3)", borderWidth: 1, borderDash: [4, 4]
+                };
+                annotations.yellowLine = {
+                    type: "line", yMin: thresholds.yellow_min, yMax: thresholds.yellow_min,
+                    borderColor: "rgba(239, 68, 68, 0.3)", borderWidth: 1, borderDash: [4, 4]
+                };
+            }
+
+            return new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        borderColor: color,
+                        backgroundColor: ZONE_COLORS[zone]?.fill || ZONE_COLORS.red.fill,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHitRadius: 8,
+                        fill: true,
+                        tension: 0.3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        annotation: { annotations },
+                        tooltip: {
+                            mode: "index",
+                            intersect: false,
+                            callbacks: {
+                                title: (items) => items[0]?.label || "",
+                                label: (item) => item.parsed.y.toFixed(2),
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            display: false,
+                            beginAtZero: false,
+                        }
+                    },
+                    interaction: {
+                        mode: "nearest",
+                        axis: "x",
+                        intersect: false,
+                    }
+                }
+            });
+        }
+
+        function buildCard(key, metric) {
+            if (!metric) return `<div class="card"><div class="card-name">Data unavailable</div></div>`;
+
+            const zone = metric.zone || "unknown";
+            const source = SOURCES[key] || {};
+            const formattedVal = formatValue(metric.current_value, metric.unit);
+            const canvasId = `chart-${key}`;
+
+            return `
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-name">${metric.name}</div>
+                        <div class="zone-badge ${zone}"></div>
+                    </div>
+                    <div class="card-value ${zone}">${formattedVal}</div>
+                    <div class="card-unit">${metric.unit}</div>
+                    <div class="card-chart">
+                        <canvas id="${canvasId}"></canvas>
+                    </div>
+                    <div class="card-description">${metric.description}</div>
+                    ${buildThresholdBar(metric.thresholds)}
+                    ${buildHistoryNotes(metric.history_notes)}
+                    <div class="card-date">Latest: ${metric.current_date || "—"}<span class="card-freq">${source.freq || "—"}</span></div>
+                    <div class="card-source">
+                        Source: <a href="${source.url || "#"}" target="_blank" rel="noopener">${source.label || "—"}</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadDashboard() {
+            try {
+                const data = await fetchData();
+
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                // Build assessment
+                buildAssessment(data.overall, data.last_updated);
+
+                // Build cards grouped by category
+                let html = "";
+                for (const cat of CATEGORIES) {
+                    html += `<div class="category">`;
+                    html += `<div class="category-title">${cat.name}</div>`;
+                    html += `<div class="cards">`;
+                    for (const key of cat.keys) {
+                        html += buildCard(key, data.metrics[key]);
+                    }
+                    html += `</div></div>`;
+                }
+
+                document.getElementById("content").innerHTML = html;
+
+                // Destroy old charts
+                for (const c of Object.values(charts)) c.destroy();
+                charts = {};
+
+                // Create sparklines
+                for (const cat of CATEGORIES) {
+                    for (const key of cat.keys) {
+                        const metric = data.metrics[key];
+                        if (!metric || !metric.recent) continue;
+                        const canvas = document.getElementById(`chart-${key}`);
+                        if (canvas) {
+                            charts[key] = createSparkline(canvas, metric.recent, metric.zone, metric.thresholds);
+                        }
+                    }
+                }
+
+            } catch (e) {
+                showError("Failed to load data: " + e.message);
+                console.error(e);
+            }
+        }
+
+        // Initial load
+        loadDashboard();
+    </script>
+</body>
+</html>
