@@ -132,8 +132,16 @@
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: var(--text-muted);
-            margin-bottom: 12px;
+            margin-bottom: 4px;
             padding-left: 4px;
+        }
+
+        .category-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding-left: 4px;
+            margin-bottom: 12px;
+            line-height: 1.5;
         }
 
         .cards {
@@ -142,19 +150,143 @@
             gap: 16px;
         }
 
-        /* Metric cards */
-        .card {
+        /* Metric cards — flip container */
+        .card-container {
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            transition: transform 0.5s ease;
+            transform-style: preserve-3d;
+        }
+
+        .card-container.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-container:hover .card-inner {
+            transform: translateY(-3px);
+        }
+
+        .card-container.flipped:hover .card-inner {
+            transform: rotateY(180deg) translateY(-3px);
+        }
+
+        .card-container:hover {
+            filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.3));
+        }
+
+        .card-front, .card-back {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 20px;
-            transition: background 0.2s;
-            cursor: default;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .card-front {
             position: relative;
         }
 
-        .card:hover {
+        .card-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotateY(180deg);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-front:hover, .card-back:hover {
             background: var(--bg-card-hover);
+        }
+
+        /* Flip hint */
+        .flip-hint {
+            position: absolute;
+            bottom: 12px;
+            right: 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .card-container:hover .flip-hint {
+            opacity: 1;
+        }
+
+        .card-container.flipped .flip-hint-front {
+            opacity: 0 !important;
+        }
+
+        /* Back side styles */
+        .back-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .back-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .back-close-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .back-section {
+            margin-bottom: 14px;
+        }
+
+        .back-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--blue);
+            margin-bottom: 6px;
+        }
+
+        .back-section p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .back-example {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .back-example-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--yellow);
+            margin-bottom: 6px;
+        }
+
+        .back-example p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
         }
 
         .card-header {
@@ -234,15 +366,16 @@
         .card-freq {
             display: inline-block;
             font-size: 10px;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: var(--text-muted);
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.3);
             border-radius: 4px;
-            padding: 2px 6px;
+            padding: 2px 7px;
             margin-left: 8px;
+            vertical-align: middle;
         }
 
         /* History notes tooltip */
@@ -286,9 +419,9 @@
             border-radius: 2px;
         }
 
-        .threshold-segment.green { background: var(--green); opacity: 0.6; }
-        .threshold-segment.yellow { background: var(--yellow); opacity: 0.6; }
-        .threshold-segment.red { background: var(--red); opacity: 0.6; }
+        .threshold-segment.green { background: var(--green); opacity: 0.85; }
+        .threshold-segment.yellow { background: var(--yellow); opacity: 0.85; }
+        .threshold-segment.red { background: var(--red); opacity: 0.85; }
 
         .threshold-labels {
             display: flex;
@@ -298,7 +431,7 @@
 
         .threshold-label {
             font-size: 10px;
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
 
         /* Loading state */
@@ -371,14 +504,17 @@
         const CATEGORIES = [
             {
                 name: "Energy Markets",
+                subtitle: "Leading indicators — these move within hours of a disruption. Even a single-day spike can signal real trouble, though sustained elevation over 1-2 weeks confirms the crisis isn't just a scare.",
                 keys: ["brent_crude", "crack_spread", "calendar_spread"]
             },
             {
                 name: "Economic Stress",
+                subtitle: "Lagging indicators — these move weeks to months after an energy shock takes hold. By the time these deteriorate, the damage is already baked in. Watch for the direction of change more than any single reading.",
                 keys: ["industrial_production", "eu_natural_gas", "capacity_utilization"]
             },
             {
                 name: "Financial Contagion",
+                subtitle: "Mixed-speed indicators — credit spreads can blow out overnight (leading), while jobless claims take weeks and inflation expectations take months. If all three move together, the crisis has spread beyond energy into the broader economy.",
                 keys: ["hy_credit_spread", "jobless_claims", "inflation_expectations"]
             }
         ];
@@ -393,6 +529,63 @@
             hy_credit_spread: { label: "FRED: BAMLH0A0HYM2", url: "https://fred.stlouisfed.org/series/BAMLH0A0HYM2", freq: "Daily" },
             jobless_claims: { label: "FRED: ICSA", url: "https://fred.stlouisfed.org/series/ICSA", freq: "Weekly" },
             inflation_expectations: { label: "FRED: MICH", url: "https://fred.stlouisfed.org/series/MICH", freq: "Monthly" },
+        };
+
+        const CARD_BACKS = {
+            brent_crude: {
+                what: "Brent Crude is the global benchmark price for oil, set by trading on the Intercontinental Exchange. It reflects the market's consensus on what a barrel of oil is worth right now, factoring in supply, demand, and geopolitical risk.",
+                why: "The Strait of Hormuz carries roughly 20% of the world's oil supply. When that chokepoint is threatened, Brent is the first number to move. It's the headline price that drives gasoline costs, shipping rates, and inflation expectations worldwide.",
+                example_label: "July 2008 — Oil hits $147/barrel",
+                example: "Surging demand from China, supply fears, and speculation drove oil to an all-time high. U.S. gasoline hit $4.11/gallon. The shock contributed to the consumer spending collapse that deepened the financial crisis months later. Prices then crashed to $32/barrel by December as demand evaporated."
+            },
+            crack_spread: {
+                what: "The 3-2-1 crack spread measures the profit margin refineries earn by \"cracking\" 3 barrels of crude oil into 2 barrels of gasoline and 1 barrel of diesel. When this number is high, refineries are struggling to keep up with demand for finished fuel.",
+                why: "A rising crude price is concerning, but a blowing-out crack spread is worse — it means the bottleneck isn't just oil supply, it's the entire refining system. If refineries can't source enough crude (because tankers can't transit Hormuz), the crack spread explodes even as crude prices rise.",
+                example_label: "June 2022 — Crack spread hits $60/barrel",
+                example: "After Russia invaded Ukraine and Western sanctions disrupted fuel trade flows, diesel became critically scarce. U.S. East Coast diesel inventories hit their lowest since 1990. The crack spread tripled from normal levels as refineries literally couldn't make enough fuel. Diesel prices at the pump hit $5.81/gallon, hammering trucking, agriculture, and food prices."
+            },
+            calendar_spread: {
+                what: "This is the price difference between oil for delivery next month versus two months from now. When the near-term price is higher (called \"backwardation\"), it means buyers are paying a premium to get oil right now rather than waiting.",
+                why: "This is the market's real-time vote on how tight physical supply is. Futures prices can be driven by speculation, but the calendar spread reflects actual urgency from refiners and traders who need physical barrels. A large positive spread means \"we need oil NOW and we'll pay extra for it.\"",
+                example_label: "March 2022 — Backwardation hits ~$5/barrel",
+                example: "Immediately after Russia's invasion of Ukraine, buyers scrambled to lock in physical barrels as they feared Russian oil would vanish from the market. The Brent calendar spread spiked to ~$5/barrel, its widest in over a decade. Traders were paying massive premiums for immediate delivery, signaling genuine panic about near-term supply."
+            },
+            industrial_production: {
+                what: "The Industrial Production Index measures the real (inflation-adjusted) output of U.S. factories, mines, and utilities. It's published monthly by the Federal Reserve and indexed so that 2017 = 100.",
+                why: "This is our clearest signal for whether the energy shock is causing real economic damage beyond just higher prices. If factories start producing less because energy costs make it unprofitable, it confirms the crisis is moving from \"annoying\" to \"recessionary.\" This metric moves slowly (monthly), so by the time it drops, the problem is well-established.",
+                example_label: "April 2020 — Index drops to 86.9",
+                example: "COVID lockdowns caused the sharpest single-month drop in industrial production since WWII. Factories shut down not because of energy costs but because of mandated closures and collapsed demand. The index fell 12.7% in one month. For comparison, the 2008 financial crisis caused a gradual decline from 101 to 87 over 18 months — a slower bleed but equally devastating."
+            },
+            eu_natural_gas: {
+                what: "This tracks the price of natural gas delivered to Europe, measured in dollars per million British thermal units (MMBtu). Europe imports most of its gas via pipeline or LNG tanker, making it highly sensitive to supply disruptions.",
+                why: "European natural gas is the canary in the coal mine for industrial shutdowns. Fertilizer plants, chemical refineries, and aluminum smelters are massive gas consumers. When gas prices spike, these plants shut down because operating at a loss is worse than not operating at all. Those shutdowns create cascading shortages 3-6 months later in food, plastics, and construction materials.",
+                example_label: "August 2022 — European gas hits ~$70/MMBtu",
+                example: "After Russia cut gas flows through Nord Stream, European gas prices hit 14x their normal level. BASF (the world's largest chemical company) cut production at its flagship German plant. Norwegian fertilizer giant Yara halved output. Aluminum smelters across Europe shut down. The EU spent over €800 billion on emergency energy subsidies to prevent broader economic collapse."
+            },
+            capacity_utilization: {
+                what: "This measures what percentage of America's total industrial capacity is actually being used. Think of it like a restaurant: if you have 100 seats but only 77 are filled on a typical night, your capacity utilization is 77%.",
+                why: "This is the companion to Industrial Production — it tells us whether factories are slowing down. A gradual decline from 77% toward 73% signals that companies are pulling back. Below 73%, it historically correlates with recession. It's also a leading indicator for layoffs: companies reduce shifts before they fire people.",
+                example_label: "April 2020 — Utilization drops to 64.2%",
+                example: "COVID shutdowns pushed capacity utilization to its lowest reading ever recorded (data goes back to 1967). Over a third of American industrial capacity sat idle. During the 2008-09 recession, it bottomed at 66.7% — slightly less extreme but sustained over a longer period, which caused deeper structural damage to manufacturing employment."
+            },
+            hy_credit_spread: {
+                what: "This measures the extra interest rate (in basis points, where 100 bps = 1%) that risky companies must pay to borrow money, compared to ultra-safe U.S. Treasury bonds. It's essentially the market's price tag on corporate default risk.",
+                why: "Many companies — especially in tech, retail, and energy — rely on constantly rolling over debt. If lenders get scared and demand higher rates, companies that were barely profitable suddenly can't refinance. This is how an energy shock turns into a broader financial crisis: rising costs squeeze profits, lenders pull back, and a credit crunch triggers defaults and layoffs.",
+                example_label: "December 2008 — Spread hits 2,100 basis points",
+                example: "After Lehman Brothers collapsed, the high-yield bond market effectively froze. Companies couldn't borrow at any price. The spread hit 21% above Treasuries — meaning a company that previously paid 7% interest now faced 26%. This triggered a wave of corporate bankruptcies (Circuit City, Lehman, Washington Mutual) and froze hiring across the economy. Even healthy companies hoarded cash rather than invest."
+            },
+            jobless_claims: {
+                what: "This counts the number of Americans filing for unemployment benefits for the first time each week. It's one of the fastest-moving economic indicators because it's reported weekly with almost no delay.",
+                why: "This is our early warning system for whether the crisis is hitting ordinary workers. Energy shocks typically cause layoffs in a predictable sequence: first transportation and logistics, then manufacturing, then retail and services. A sustained rise above 300K weekly claims historically signals recession is either imminent or already underway.",
+                example_label: "March 2020 — Claims spike to 6.87 million in one week",
+                example: "In the week ending March 28, 2020, nearly 6.9 million Americans filed for unemployment — roughly 33x the normal level. This remains the single worst week for job losses in U.S. history. For context, the worst week during the 2008-09 recession peaked at 665,000. The COVID spike was so extreme that it literally broke the scale on most economic charts."
+            },
+            inflation_expectations: {
+                what: "Each month, the University of Michigan surveys consumers and asks: \"What do you think inflation will be over the next year?\" This number reflects what everyday people expect to happen to prices — and expectations can become self-fulfilling.",
+                why: "This is the psychological dimension of the crisis. When consumers expect high inflation, they change behavior: buying things now before prices rise, demanding higher wages, and cutting discretionary spending. If this number climbs above 4.5%, it signals that the crisis has moved from Wall Street into kitchen-table conversations — and that behavioral shifts are likely to amplify the economic damage.",
+                example_label: "April 2022 — Expectations hit 5.4%",
+                example: "As gas prices surged past $5/gallon following Russia's invasion of Ukraine, consumer inflation expectations hit their highest level since 1981. This spooked the Federal Reserve into its most aggressive rate-hiking cycle in 40 years (raising rates from 0% to 5.5% in 18 months). The rate hikes were necessary to break the inflation psychology, but they also crushed the housing market and contributed to the regional banking crisis of 2023."
+            }
         };
 
         let charts = {};
@@ -577,30 +770,54 @@
         }
 
         function buildCard(key, metric) {
-            if (!metric) return `<div class="card"><div class="card-name">Data unavailable</div></div>`;
+            if (!metric) return `<div class="card-container"><div class="card-inner"><div class="card-front"><div class="card-name">Data unavailable</div></div></div></div>`;
 
             const zone = metric.zone || "unknown";
             const source = SOURCES[key] || {};
             const formattedVal = formatValue(metric.current_value, metric.unit);
             const canvasId = `chart-${key}`;
+            const back = CARD_BACKS[key] || {};
 
             return `
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-name">${metric.name}</div>
-                        <div class="zone-badge ${zone}"></div>
-                    </div>
-                    <div class="card-value ${zone}">${formattedVal}</div>
-                    <div class="card-unit">${metric.unit}</div>
-                    <div class="card-chart">
-                        <canvas id="${canvasId}"></canvas>
-                    </div>
-                    <div class="card-description">${metric.description}</div>
-                    ${buildThresholdBar(metric.thresholds)}
-                    ${buildHistoryNotes(metric.history_notes)}
-                    <div class="card-date">Latest: ${metric.current_date || "—"}<span class="card-freq">${source.freq || "—"}</span></div>
-                    <div class="card-source">
-                        Source: <a href="${source.url || "#"}" target="_blank" rel="noopener">${source.label || "—"}</a>
+                <div class="card-container" onclick="this.classList.toggle('flipped')">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <div class="card-header">
+                                <div class="card-name">${metric.name}<span class="card-freq">${source.freq || "—"}</span></div>
+                                <div class="zone-badge ${zone}"></div>
+                            </div>
+                            <div class="card-value ${zone}">${formattedVal}</div>
+                            <div class="card-unit">${metric.unit}</div>
+                            <div class="card-chart">
+                                <canvas id="${canvasId}"></canvas>
+                            </div>
+                            <div class="card-description">${metric.description}</div>
+                            ${buildThresholdBar(metric.thresholds)}
+                            ${buildHistoryNotes(metric.history_notes)}
+                            <div class="card-date">Latest: ${metric.current_date || "—"}</div>
+                            <div class="card-source">
+                                Source: <a href="${source.url || "#"}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${source.label || "—"}</a>
+                            </div>
+                            <div class="flip-hint flip-hint-front">ℹ Click to learn more</div>
+                        </div>
+                        <div class="card-back">
+                            <div class="back-header">
+                                <div class="back-title">${metric.name}</div>
+                                <div class="back-close-hint">Click to flip back</div>
+                            </div>
+                            <div class="back-section">
+                                <div class="back-section-title">What This Measures</div>
+                                <p>${back.what || ""}</p>
+                            </div>
+                            <div class="back-section">
+                                <div class="back-section-title">Why We're Watching It</div>
+                                <p>${back.why || ""}</p>
+                            </div>
+                            <div class="back-example">
+                                <div class="back-example-label">${back.example_label || "Historical Example"}</div>
+                                <p>${back.example || ""}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -623,6 +840,7 @@
                 for (const cat of CATEGORIES) {
                     html += `<div class="category">`;
                     html += `<div class="category-title">${cat.name}</div>`;
+                    html += `<div class="category-subtitle">${cat.subtitle}</div>`;
                     html += `<div class="cards">`;
                     for (const key of cat.keys) {
                         html += buildCard(key, data.metrics[key]);
