@@ -94,8 +94,9 @@
         .assessment-meta {
             margin-left: auto;
             text-align: right;
-            font-size: 12px;
-            color: var(--text-muted);
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .refresh-btn {
@@ -591,22 +592,13 @@
         let charts = {};
 
         async function fetchData() {
-            const resp = await fetch("/api/data");
-            if (!resp.ok) throw new Error(`Server error: ${resp.status}`);
-            return resp.json();
-        }
-
-        async function refreshData() {
-            const btn = document.querySelector(".refresh-btn");
-            if (btn) { btn.classList.add("loading"); btn.textContent = "Refreshing..."; }
-            try {
-                await fetch("/api/refresh", { method: "POST" });
-                await loadDashboard();
-            } catch (e) {
-                showError(e.message);
-            } finally {
-                if (btn) { btn.classList.remove("loading"); btn.textContent = "Refresh Data"; }
+            // Try static data.json first (GitHub Pages), fall back to API (local dev)
+            let resp = await fetch("data.json");
+            if (!resp.ok) {
+                resp = await fetch("/api/data");
             }
+            if (!resp.ok) throw new Error(`Failed to load data: ${resp.status}`);
+            return resp.json();
         }
 
         function showError(msg) {
@@ -644,8 +636,7 @@
                     <div class="assessment-dot"></div>
                     <div class="assessment-text">${overall.label}</div>
                     <div class="assessment-meta">
-                        <div>Updated: ${time}</div>
-                        <button class="refresh-btn" onclick="refreshData()">Refresh Data</button>
+                        Data as of ${time}
                     </div>
                 </div>
             `;
