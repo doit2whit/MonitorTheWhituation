@@ -7,7 +7,7 @@ Run locally or via GitHub Actions on a schedule.
 
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 import yfinance as yf
 
@@ -347,7 +347,7 @@ def main():
         "metrics": results,
         "overall": overall,
         "historical_events": HISTORICAL_EVENTS,
-        "last_updated": datetime.now().isoformat(),
+        "last_updated": datetime.now(timezone.utc).isoformat(),
     }
 
     out_path = os.path.join(os.path.dirname(__file__), "docs", "data.json")
