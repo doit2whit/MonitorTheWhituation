@@ -350,7 +350,7 @@ def main():
         "last_updated": datetime.now().isoformat(),
     }
 
-    out_path = os.path.join(os.path.dirname(__file__), "static", "data.json")
+    out_path = os.path.join(os.path.dirname(__file__), "docs", "data.json")
     with open(out_path, "w") as f:
         json.dump(payload, f)
 
