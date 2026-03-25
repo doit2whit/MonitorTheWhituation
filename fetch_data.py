@@ -1,6 +1,6 @@
 """
 Fetch all dashboard metrics from FRED and Yahoo Finance,
-compute derived metrics, and save as static/data.json.
+compute derived metrics, and save as docs/data.json.
 
 Run locally or via GitHub Actions on a schedule.
 """

@@ -9,7 +9,7 @@ import yfinance as yf
 
 load_dotenv()
 
-app = Flask(__name__, static_folder="static")
+app = Flask(__name__, static_folder="docs")
 FRED_API_KEY = os.getenv("FRED_API_KEY")
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "data_cache")
 CACHE_MAX_AGE = 3600 * 6  # 6 hours
