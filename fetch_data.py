@@ -133,6 +133,48 @@ METRICS = {
             "2019-12": "Pre-COVID normal: 2.3%",
         },
     },
+    "bizd_etf": {
+        "name": "BDC Income ETF (BIZD)",
+        "source": "yfinance",
+        "ticker": "BIZD",
+        "unit": "$/share",
+        "category": "Private Credit",
+        "description": "ETF tracking ~25 publicly traded BDCs that make private loans to mid-market companies.",
+        "thresholds": {"green_min": 13.50, "yellow_min": 11.00, "direction": "down_is_bad"},
+        "history_notes": {
+            "2020-03": "COVID crash: fell ~45% in 3 weeks",
+            "2022-01": "Post-COVID peak: ~$17.50",
+            "2019-12": "Pre-COVID normal: ~$15.00",
+        },
+    },
+    "arcc": {
+        "name": "Ares Capital (ARCC)",
+        "source": "yfinance",
+        "ticker": "ARCC",
+        "unit": "$/share",
+        "category": "Private Credit",
+        "description": "Largest publicly traded BDC ($25B+ portfolio). Named in recent private credit redemption gate reports.",
+        "thresholds": {"green_min": 18.50, "yellow_min": 15.00, "direction": "down_is_bad"},
+        "history_notes": {
+            "2008-12": "Financial crisis: fell from $17 to $3",
+            "2020-03": "COVID crash: fell ~50% to $8.50",
+            "2019-12": "Pre-COVID normal: ~$19",
+        },
+    },
+    "main_street": {
+        "name": "Main Street Capital (MAIN)",
+        "source": "yfinance",
+        "ticker": "MAIN",
+        "unit": "$/share",
+        "category": "Private Credit",
+        "description": "High-quality BDC bellwether. If this drops significantly, broad private credit distress is likely.",
+        "thresholds": {"green_min": 55.00, "yellow_min": 45.00, "direction": "down_is_bad"},
+        "history_notes": {
+            "2020-03": "COVID crash: fell ~50% despite strong portfolio",
+            "2022-01": "Post-COVID peak: ~$48",
+            "2019-12": "Pre-COVID normal: ~$42",
+        },
+    },
 }
 
 HISTORICAL_EVENTS = [
@@ -157,8 +199,14 @@ def fetch_fred_series(series_id, years=5):
         "observation_start": start,
         "sort_order": "asc",
     }
-    resp = requests.get(url, params=params, timeout=15)
-    resp.raise_for_status()
+    for attempt in range(3):
+        resp = requests.get(url, params=params, timeout=15)
+        if resp.status_code == 500 and attempt < 2:
+            import time
+            time.sleep(2)
+            continue
+        resp.raise_for_status()
+        break
     observations = resp.json().get("observations", [])
     return [
         {"date": obs["date"], "value": float(obs["value"])}
@@ -218,6 +266,23 @@ def fill_brent_gaps(fred_data):
         print(f"Yahoo gap-fill failed, using FRED data only: {e}")
 
     return fred_data
+
+
+def fetch_yahoo_ticker(symbol, period="5y"):
+    """Fetch historical closing prices for a Yahoo Finance ticker."""
+    try:
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(period=period)
+        if hist.empty:
+            print(f"Yahoo Finance returned no data for {symbol}")
+            return None
+        return [
+            {"date": idx.strftime("%Y-%m-%d"), "value": round(row["Close"], 2)}
+            for idx, row in hist.iterrows()
+        ]
+    except Exception as e:
+        print(f"Error fetching {symbol}: {e}")
+        return None
 
 
 def fetch_calendar_spread():
@@ -371,6 +436,11 @@ def main():
     print("Fetching calendar spread from Yahoo Finance...")
     cal_spread = fetch_calendar_spread()
 
+    print("Fetching Private Credit tickers from Yahoo Finance...")
+    bizd = fetch_yahoo_ticker("BIZD")
+    arcc = fetch_yahoo_ticker("ARCC")
+    main_street = fetch_yahoo_ticker("MAIN")
+
     print("Packaging results...")
     results = {
         "brent_crude": package_metric("brent_crude", brent),
@@ -382,6 +452,9 @@ def main():
         "hy_credit_spread": package_metric("hy_credit_spread", hy_spread),
         "jobless_claims": package_metric("jobless_claims", icsa),
         "inflation_expectations": package_metric("inflation_expectations", mich),
+        "bizd_etf": package_metric("bizd_etf", bizd),
+        "arcc": package_metric("arcc", arcc),
+        "main_street": package_metric("main_street", main_street),
     }
 
     # Compute zones and overall assessment

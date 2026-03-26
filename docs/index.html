@@ -533,6 +533,11 @@
                 name: "Financial Contagion",
                 subtitle: "Mixed-speed indicators — credit spreads can blow out overnight (leading), while jobless claims take weeks and inflation expectations take months. If all three move together, the crisis has spread beyond energy into the broader economy.",
                 keys: ["hy_credit_spread", "jobless_claims", "inflation_expectations"]
+            },
+            {
+                name: "Private Credit",
+                subtitle: "Daily market-priced signals reflecting investor sentiment about private lending. BDCs (Business Development Companies) are the publicly traded tip of the $1.7T private credit market — when their stock prices drop, investors are pricing in expected loan losses across a sector that's largely opaque. Watch for all three moving down together.",
+                keys: ["bizd_etf", "arcc", "main_street"]
             }
         ];
 
@@ -546,6 +551,9 @@
             hy_credit_spread: { label: "FRED: BAMLH0A0HYM2", url: "https://fred.stlouisfed.org/series/BAMLH0A0HYM2", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/FRED-BAMLH0A0HYM2/", liveLabel: "Trades live" },
             jobless_claims: { label: "FRED: ICSA", url: "https://fred.stlouisfed.org/series/ICSA", freq: "Weekly" },
             inflation_expectations: { label: "FRED: MICH", url: "https://fred.stlouisfed.org/series/MICH", freq: "Monthly" },
+            bizd_etf: { label: "Yahoo Finance: BIZD", url: "https://finance.yahoo.com/quote/BIZD/", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/AMEX-BIZD/", liveLabel: "Trades live" },
+            arcc: { label: "Yahoo Finance: ARCC", url: "https://finance.yahoo.com/quote/ARCC/", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/NASDAQ-ARCC/", liveLabel: "Trades live" },
+            main_street: { label: "Yahoo Finance: MAIN", url: "https://finance.yahoo.com/quote/MAIN/", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/NYSE-MAIN/", liveLabel: "Trades live" },
         };
 
         const CARD_BACKS = {
@@ -602,6 +610,24 @@
                 why: "This is the psychological dimension of the crisis. When consumers expect high inflation, they change behavior: buying things now before prices rise, demanding higher wages, and cutting discretionary spending. If this number climbs above 4.5%, it signals that the crisis has moved from Wall Street into kitchen-table conversations — and that behavioral shifts are likely to amplify the economic damage.",
                 example_label: "April 2022 — Expectations hit 5.4%",
                 example: "As gas prices surged past $5/gallon following Russia's invasion of Ukraine, consumer inflation expectations hit their highest level since 1981. This spooked the Federal Reserve into its most aggressive rate-hiking cycle in 40 years (raising rates from 0% to 5.5% in 18 months). The rate hikes were necessary to break the inflation psychology, but they also crushed the housing market and contributed to the regional banking crisis of 2023."
+            },
+            bizd_etf: {
+                what: "BIZD is an ETF that holds shares in roughly 25 publicly traded Business Development Companies (BDCs). BDCs make floating-rate loans to mid-market companies — the same types of borrowers that private credit funds lend to. Because the ETF is traded daily on the stock exchange, it gives a real-time read on how the market values these private loan portfolios.",
+                why: "Private credit is a $1.7 trillion market, but it's largely opaque — funds don't publish real-time stress data. BIZD is the publicly visible tip of that iceberg. When it drops, investors are pricing in expected loan losses across the sector. During an energy shock, companies with thin margins (many BDC borrowers) can't absorb higher fuel and input costs, leading to defaults. BIZD captures that risk in real time.",
+                example_label: "March 2020 — COVID crash",
+                example: "BIZD fell roughly 45% in three weeks as markets feared mass defaults among leveraged middle-market borrowers. Companies that had taken on floating-rate BDC loans suddenly faced revenue collapse while their interest payments stayed elevated. The ETF eventually recovered, but it took over a year — far slower than the S&P 500 — because actual loan losses materialized through 2020 and into 2021."
+            },
+            arcc: {
+                what: "Ares Capital Corporation is the largest publicly traded BDC, with a portfolio exceeding $25 billion in direct loans to mid-sized companies. Ares Capital's parent company, Ares Management, was specifically named in March 2026 reports about private credit funds imposing redemption gates — trapping $5 billion of investor money behind withdrawal caps.",
+                why: "ARCC's stock price reflects the market's real-time opinion on whether the private credit business model is healthy or cracking. Because Ares is the biggest player, its stock is a bellwether for the entire sector. If ARCC drops sharply, it means the market expects loan losses that would impair even the most diversified private credit portfolio.",
+                example_label: "2008-2009 — Financial crisis",
+                example: "ARCC fell from roughly $17 to $3 per share as the leveraged loan market froze. Companies that had borrowed from BDCs couldn't refinance, defaults spiked, and BDCs had to write down their loan portfolios. ARCC survived by cutting its dividend and raising emergency capital, but shareholders lost over 80% of their investment at the trough. The stock didn't recover to pre-crisis levels for nearly a decade."
+            },
+            main_street: {
+                what: "Main Street Capital is a premium BDC focused on lower middle-market companies (typically $10M-$150M in revenue). Unlike most BDCs, Main Street is internally managed — meaning it doesn't pay external management fees that eat into returns. This makes it the 'blue chip' of the BDC sector, with a track record of consistent dividends and lower credit losses.",
+                why: "MAIN is the canary in the BDC coal mine. Because it's considered the highest-quality name in the sector, a significant drop in MAIN signals that the market isn't just worried about junk-tier private loans — it's pricing in broad distress across all of private credit. When even the best-run BDC gets sold off, it means investors believe the entire lending environment has deteriorated.",
+                example_label: "March 2020 — COVID panic selling",
+                example: "MAIN fell roughly 50% in weeks despite having one of the strongest portfolios in the BDC sector. This showed that during a true crisis, panic selling doesn't discriminate between quality and junk — everything gets hit. MAIN's actual credit losses turned out to be modest (its strong underwriting paid off), but the stock price crash was a real-time signal that investors feared the worst for all private lending."
             }
         };
 
@@ -627,6 +653,7 @@
             if (value === null || value === undefined) return "—";
             if (unit === "$/barrel") return "$" + value.toFixed(2);
             if (unit === "$/MMBtu") return "$" + value.toFixed(2);
+            if (unit === "$/share") return "$" + value.toFixed(2);
             if (unit === "%") return value.toFixed(1) + "%";
             if (unit === "basis points") return Math.round(value) + " bps";
             if (unit === "thousands") return value.toFixed(0) + "K";
