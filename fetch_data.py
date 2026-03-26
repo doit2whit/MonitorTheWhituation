@@ -167,6 +167,59 @@ def fetch_fred_series(series_id, years=5):
     ]
 
 
+def most_recent_business_day():
+    """Return the most recent completed business day as YYYY-MM-DD.
+    Uses yesterday to be conservative (avoids fetching before market close)."""
+    target = datetime.now() - timedelta(days=1)
+    while target.weekday() >= 5:  # Saturday=5, Sunday=6
+        target -= timedelta(days=1)
+    return target.strftime("%Y-%m-%d")
+
+
+def fill_brent_gaps(fred_data):
+    """Append recent Yahoo Finance data if FRED is lagging behind.
+    Yahoo days are marked with estimated=True and will be replaced
+    by FRED data on the next refresh once FRED catches up."""
+    if not fred_data:
+        return fred_data
+
+    latest_fred_date = fred_data[-1]["date"]
+    target_date = most_recent_business_day()
+
+    if latest_fred_date >= target_date:
+        print("Brent FRED data is current, no gap-fill needed")
+        return fred_data
+
+    try:
+        ticker = yf.Ticker("BZ=F")
+        yahoo_data = ticker.history(period="5d")
+
+        if yahoo_data.empty:
+            print("Yahoo Finance returned no data for BZ=F, skipping gap-fill")
+            return fred_data
+
+        filled_count = 0
+        for idx, row in yahoo_data.iterrows():
+            date_str = idx.strftime("%Y-%m-%d")
+            if date_str > latest_fred_date:
+                fred_data.append({
+                    "date": date_str,
+                    "value": round(row["Close"], 2),
+                    "estimated": True,
+                })
+                filled_count += 1
+
+        if filled_count:
+            print(f"Filled {filled_count} days of Brent data from Yahoo Finance (BZ=F)")
+        else:
+            print("No newer Yahoo data found beyond FRED's latest date")
+
+    except Exception as e:
+        print(f"Yahoo gap-fill failed, using FRED data only: {e}")
+
+    return fred_data
+
+
 def fetch_calendar_spread():
     month_codes = ["F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z"]
     now = datetime.now()
@@ -269,12 +322,19 @@ def package_metric(key, data):
     display_data = data
     if "display_multiplier" in meta:
         m = meta["display_multiplier"]
-        display_data = [{"date": d["date"], "value": round(d["value"] * m, 2)} for d in data]
+        display_data = [
+            {**{"date": d["date"], "value": round(d["value"] * m, 2)}, **({"estimated": True} if d.get("estimated") else {})}
+            for d in data
+        ]
     elif "display_divisor" in meta:
         dv = meta["display_divisor"]
-        display_data = [{"date": d["date"], "value": round(d["value"] / dv, 1)} for d in data]
+        display_data = [
+            {**{"date": d["date"], "value": round(d["value"] / dv, 1)}, **({"estimated": True} if d.get("estimated") else {})}
+            for d in data
+        ]
 
     current = display_data[-1]["value"] if display_data else None
+    is_estimated = display_data[-1].get("estimated", False) if display_data else False
     recent = display_data[-90:] if len(display_data) > 90 else display_data
 
     return {
@@ -284,6 +344,7 @@ def package_metric(key, data):
         "unit": meta["unit"],
         "current_value": current,
         "current_date": display_data[-1]["date"] if display_data else None,
+        "current_estimated": is_estimated,
         "recent": recent,
         "full_history": display_data,
         "thresholds": meta["thresholds"],
@@ -294,6 +355,7 @@ def package_metric(key, data):
 def main():
     print("Fetching FRED series...")
     brent = fetch_fred_series("DCOILBRENTEU")
+    brent = fill_brent_gaps(brent)
     gasoline = fetch_fred_series("DGASNYH")
     heating_oil = fetch_fred_series("DHOILNYH")
     indpro = fetch_fred_series("INDPRO")

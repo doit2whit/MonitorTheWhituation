@@ -350,6 +350,17 @@
             color: var(--text-muted);
         }
 
+        .estimated-badge {
+            font-size: 10px;
+            color: var(--yellow);
+            background: var(--yellow-bg);
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-left: 4px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
         .card-source {
             font-size: 11px;
             color: var(--text-muted);
@@ -790,7 +801,7 @@
                             <div class="card-description">${metric.description}</div>
                             ${buildThresholdBar(metric.thresholds)}
                             ${buildHistoryNotes(metric.history_notes)}
-                            <div class="card-date">Latest: ${metric.current_date || "—"}</div>
+                            <div class="card-date">Latest: ${metric.current_date || "—"}${metric.current_estimated ? ' <span class="estimated-badge">est.</span>' : ''}</div>
                             <div class="card-source">
                                 Source: <a href="${source.url || "#"}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${source.label || "—"}</a>
                                 ${source.liveUrl ? `&nbsp;·&nbsp;<a href="${source.liveUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="live-link">${source.liveLabel}</a>` : ""}
