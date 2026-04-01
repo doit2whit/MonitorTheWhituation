@@ -285,14 +285,28 @@ def fetch_yahoo_ticker(symbol, period="5y"):
         return None
 
 
+MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+FUTURES_MONTH_CODES = ["F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z"]
+
+
+def ticker_to_label(ticker):
+    """Convert a ticker like BZK26.NYM to 'May 2026'."""
+    if not ticker or ticker == "BZ=F":
+        return None
+    code = ticker[2]  # e.g. 'K'
+    year_suffix = ticker[3:5]  # e.g. '26'
+    idx = FUTURES_MONTH_CODES.index(code)
+    return f"{MONTH_NAMES[idx]} 20{year_suffix}"
+
+
 def fetch_calendar_spread():
-    month_codes = ["F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z"]
     now = datetime.now()
 
     def make_ticker(month_offset):
         m = (now.month - 1 + month_offset) % 12
         y = now.year + (now.month - 1 + month_offset) // 12
-        return f"BZ{month_codes[m]}{str(y)[-2:]}.NYM"
+        return f"BZ{FUTURES_MONTH_CODES[m]}{str(y)[-2:]}.NYM"
 
     try:
         fm_data = None
@@ -333,10 +347,25 @@ def fetch_calendar_spread():
         merged = fm_df.join(sm_df, how="inner")
         merged["spread"] = merged["front"] - merged["second"]
 
-        return [
+        # Build human-readable contract label
+        fm_label = ticker_to_label(fm_ticker)
+        sm_label = ticker_to_label(sm_ticker)
+        if fm_label and sm_label:
+            # Extract just month names if same year, e.g. "May vs Jun 2026"
+            fm_parts = fm_label.split()
+            sm_parts = sm_label.split()
+            if fm_parts[1] == sm_parts[1]:
+                contracts = f"{fm_parts[0]} vs {sm_parts[0]} {fm_parts[1]}"
+            else:
+                contracts = f"{fm_label} vs {sm_label}"
+        else:
+            contracts = None
+
+        data = [
             {"date": date_str, "value": round(row["spread"], 2)}
             for date_str, row in merged.iterrows()
         ]
+        return {"data": data, "contracts": contracts}
     except Exception as e:
         print(f"Error fetching calendar spread: {e}")
         return None
@@ -434,7 +463,9 @@ def main():
     crack = compute_crack_spread(brent, gasoline, heating_oil)
 
     print("Fetching calendar spread from Yahoo Finance...")
-    cal_spread = fetch_calendar_spread()
+    cal_spread_result = fetch_calendar_spread()
+    cal_spread_data = cal_spread_result["data"] if cal_spread_result else None
+    cal_spread_contracts = cal_spread_result["contracts"] if cal_spread_result else None
 
     print("Fetching Private Credit tickers from Yahoo Finance...")
     bizd = fetch_yahoo_ticker("BIZD")
@@ -442,10 +473,14 @@ def main():
     main_street = fetch_yahoo_ticker("MAIN")
 
     print("Packaging results...")
+    cal_spread_pkg = package_metric("calendar_spread", cal_spread_data)
+    if cal_spread_pkg and cal_spread_contracts:
+        cal_spread_pkg["contracts"] = cal_spread_contracts
+
     results = {
         "brent_crude": package_metric("brent_crude", brent),
         "crack_spread": package_metric("crack_spread", crack),
-        "calendar_spread": package_metric("calendar_spread", cal_spread),
+        "calendar_spread": cal_spread_pkg,
         "industrial_production": package_metric("industrial_production", indpro),
         "eu_natural_gas": package_metric("eu_natural_gas", eu_gas),
         "capacity_utilization": package_metric("capacity_utilization", tcu),
