@@ -39,7 +39,7 @@ METRICS = {
         "unit": "$/barrel",
         "category": "Energy Markets",
         "description": "Refining margin: cost to turn crude into gasoline & diesel. Measures refinery stress.",
-        "thresholds": {"green_max": 25, "yellow_max": 40, "direction": "up_is_bad"},
+        "thresholds": {"green_max": 18, "yellow_max": 30, "direction": "up_is_bad"},
         "history_notes": {
             "2022-06": "2022 peak: ~$60/bbl during diesel crisis",
             "2019-12": "Pre-COVID normal: ~$15/bbl",

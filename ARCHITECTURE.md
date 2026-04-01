@@ -50,7 +50,7 @@ python3 server.py (Flask, port 5050)
 | Metric | FRED Series | Update Freq | Green | Yellow | Red |
 |--------|------------|-------------|-------|--------|-----|
 | Brent Crude Oil | DCOILBRENTEU | Daily | ≤$90 | $90–$120 | >$120 |
-| Crack Spread (3-2-1) | Calculated from DCOILBRENTEU + DGASNYH + DHOILNYH | Daily | ≤$25 | $25–$40 | >$40 |
+| Crack Spread (3-2-1) | Calculated from DCOILBRENTEU + DGASNYH + DHOILNYH | Daily | ≤$18 | $18–$30 | >$30 |
 | Calendar Spread | Yahoo Finance (BZ contracts) | Daily | ≤$1.50 | $1.50–$3.00 | >$3.00 |
 
 ### Economic Stress (lagging indicators — move weeks to months later)
@@ -74,7 +74,7 @@ python3 server.py (Flask, port 5050)
 Thresholds are based on historical levels during previous crises:
 
 - **Brent $90/$120**: $90 is the upper end of "normal" post-2020. $120+ has only occurred during acute crises (2008, 2022).
-- **Crack spread $25/$40**: Pre-crisis normal is ~$15. Hit $60 during the 2022 diesel crisis.
+- **Crack spread $18/$30**: Based on 20-year FRED data (2006–2026). Median is $12.54; $18 is ~80th percentile; $30 is ~95th percentile (only exceeded during acute crises like 2022). Hit $71 peak during the 2022 diesel crisis.
 - **Calendar spread $1.50/$3.00**: Normal backwardation is $0–$1. Hit ~$5 during Ukraine invasion.
 - **Industrial production 102/98**: 2017=100 baseline. Below 98 has historically coincided with recession.
 - **EU gas $10/$20**: Pre-COVID normal was ~$5. Hit $70 during 2022 Russia crisis.
