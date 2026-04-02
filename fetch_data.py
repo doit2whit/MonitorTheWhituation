@@ -246,10 +246,11 @@ def fill_brent_gaps(fred_data):
             print("Yahoo Finance returned no data for BZ=F, skipping gap-fill")
             return fred_data
 
+        import math
         filled_count = 0
         for idx, row in yahoo_data.iterrows():
             date_str = idx.strftime("%Y-%m-%d")
-            if date_str > latest_fred_date:
+            if date_str > latest_fred_date and not math.isnan(row["Close"]):
                 fred_data.append({
                     "date": date_str,
                     "value": round(row["Close"], 2),
@@ -276,9 +277,11 @@ def fetch_yahoo_ticker(symbol, period="5y"):
         if hist.empty:
             print(f"Yahoo Finance returned no data for {symbol}")
             return None
+        import math
         return [
             {"date": idx.strftime("%Y-%m-%d"), "value": round(row["Close"], 2)}
             for idx, row in hist.iterrows()
+            if not math.isnan(row["Close"])
         ]
     except Exception as e:
         print(f"Error fetching {symbol}: {e}")

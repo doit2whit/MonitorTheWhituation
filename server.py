@@ -306,9 +306,11 @@ def fetch_yahoo_ticker(symbol, period="5y"):
         if hist.empty:
             print(f"Yahoo Finance returned no data for {symbol}")
             return None
+        import math
         data = [
             {"date": idx.strftime("%Y-%m-%d"), "value": round(row["Close"], 2)}
             for idx, row in hist.iterrows()
+            if not math.isnan(row["Close"])
         ]
         write_cache(cache_key, data)
         return data
