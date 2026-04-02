@@ -54,6 +54,46 @@ METRICS = {
             "2020-04": "COVID: -$10/bbl contango (oversupply)",
         },
     },
+    "brent_wti_spread": {
+        "name": "Brent-WTI Spread",
+        "fred_ids": ["DCOILBRENTEU", "DCOILWTICO"],
+        "unit": "$/barrel",
+        "category": "Energy Markets",
+        "description": "Price gap between global (Brent) and US (WTI) oil. Widens when global disruption outpaces US shale.",
+        "thresholds": {"green_max": 6, "yellow_max": 10, "direction": "up_is_bad"},
+        "history_notes": {
+            "2016-11": "US export ban era: spread briefly negative",
+            "2019-05": "Iran sanctions + pipeline outage: ~$10",
+            "2022-07": "Ukraine invasion: ~$10",
+            "2026-03": "Strait of Hormuz crisis: $15-20+",
+        },
+    },
+    "wti_crude": {
+        "name": "WTI Crude Oil",
+        "fred_id": "DCOILWTICO",
+        "unit": "$/barrel",
+        "category": "Energy Markets",
+        "description": "Price of West Texas Intermediate crude, the US domestic benchmark.",
+        "thresholds": {"green_max": 85, "yellow_max": 110, "direction": "up_is_bad"},
+        "history_notes": {
+            "2020-04": "COVID crash: -$37/bbl (first-ever negative price)",
+            "2022-03": "Ukraine invasion: $124/bbl",
+            "2026-03": "Strait of Hormuz crisis: $90-105/bbl",
+        },
+    },
+    "us_gasoline": {
+        "name": "US Retail Gasoline",
+        "fred_id": "GASREGW",
+        "unit": "$/gallon",
+        "category": "Energy Markets",
+        "description": "Average US retail gasoline price, all grades. The price consumers actually pay at the pump.",
+        "thresholds": {"green_max": 3.50, "yellow_max": 4.50, "direction": "up_is_bad"},
+        "history_notes": {
+            "2020-04": "COVID low: $1.77/gal",
+            "2022-06": "Post-Ukraine record: $5.01/gal",
+            "2019-12": "Pre-COVID normal: ~$2.60/gal",
+        },
+    },
     "industrial_production": {
         "name": "Industrial Production Index",
         "fred_id": "INDPRO",
@@ -269,6 +309,51 @@ def fill_brent_gaps(fred_data):
     return fred_data
 
 
+def fill_wti_gaps(fred_data):
+    """Append recent Yahoo Finance data if FRED is lagging behind.
+    Yahoo days are marked with estimated=True and will be replaced
+    by FRED data on the next refresh once FRED catches up."""
+    if not fred_data:
+        return fred_data
+
+    latest_fred_date = fred_data[-1]["date"]
+    target_date = most_recent_business_day()
+
+    if latest_fred_date >= target_date:
+        print("WTI FRED data is current, no gap-fill needed")
+        return fred_data
+
+    try:
+        ticker = yf.Ticker("CL=F")
+        yahoo_data = ticker.history(period="5d")
+
+        if yahoo_data.empty:
+            print("Yahoo Finance returned no data for CL=F, skipping gap-fill")
+            return fred_data
+
+        import math
+        filled_count = 0
+        for idx, row in yahoo_data.iterrows():
+            date_str = idx.strftime("%Y-%m-%d")
+            if date_str > latest_fred_date and not math.isnan(row["Close"]):
+                fred_data.append({
+                    "date": date_str,
+                    "value": round(row["Close"], 2),
+                    "estimated": True,
+                })
+                filled_count += 1
+
+        if filled_count:
+            print(f"Filled {filled_count} days of WTI data from Yahoo Finance (CL=F)")
+        else:
+            print("No newer Yahoo data found beyond FRED's latest date for WTI")
+
+    except Exception as e:
+        print(f"Yahoo WTI gap-fill failed, using FRED data only: {e}")
+
+    return fred_data
+
+
 def fetch_yahoo_ticker(symbol, period="5y"):
     """Fetch historical closing prices for a Yahoo Finance ticker."""
     try:
@@ -391,6 +476,17 @@ def compute_crack_spread(brent_data, gasoline_data, heating_oil_data):
     ]
 
 
+def compute_brent_wti_spread(brent_data, wti_data):
+    brent = {d["date"]: d["value"] for d in brent_data}
+    wti = {d["date"]: d["value"] for d in wti_data}
+
+    common_dates = sorted(set(brent.keys()) & set(wti.keys()))
+    return [
+        {"date": date, "value": round(brent[date] - wti[date], 2)}
+        for date in common_dates
+    ]
+
+
 def compute_zone(value, thresholds):
     if value is None:
         return "unknown"
@@ -462,8 +558,13 @@ def main():
     icsa = fetch_fred_series("ICSA")
     mich = fetch_fred_series("MICH")
 
+    wti = fetch_fred_series("DCOILWTICO")
+    wti = fill_wti_gaps(wti)
+    us_gasoline = fetch_fred_series("GASREGW")
+
     print("Computing derived metrics...")
     crack = compute_crack_spread(brent, gasoline, heating_oil)
+    brent_wti = compute_brent_wti_spread(brent, wti)
 
     print("Fetching calendar spread from Yahoo Finance...")
     cal_spread_result = fetch_calendar_spread()
@@ -483,6 +584,9 @@ def main():
     results = {
         "brent_crude": package_metric("brent_crude", brent),
         "crack_spread": package_metric("crack_spread", crack),
+        "brent_wti_spread": package_metric("brent_wti_spread", brent_wti),
+        "wti_crude": package_metric("wti_crude", wti),
+        "us_gasoline": package_metric("us_gasoline", us_gasoline),
         "calendar_spread": cal_spread_pkg,
         "industrial_production": package_metric("industrial_production", indpro),
         "eu_natural_gas": package_metric("eu_natural_gas", eu_gas),

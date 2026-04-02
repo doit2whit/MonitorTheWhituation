@@ -365,6 +365,18 @@
             letter-spacing: 0.3px;
         }
 
+        .spread-caveat {
+            font-size: 11px;
+            color: var(--yellow);
+            margin-left: 8px;
+            font-weight: 400;
+            vertical-align: top;
+        }
+
+        .spread-nuance {
+            color: var(--yellow);
+        }
+
         .card-source {
             font-size: 11px;
             color: var(--text-muted);
@@ -526,7 +538,7 @@
             {
                 name: "Energy Markets",
                 subtitle: "Leading indicators — these move within hours of a disruption. Even a single-day spike can signal real trouble, though sustained elevation over 1-2 weeks confirms the crisis isn't just a scare.",
-                keys: ["brent_crude", "crack_spread", "calendar_spread"]
+                keys: ["brent_crude", "crack_spread", "calendar_spread", "brent_wti_spread", "wti_crude", "us_gasoline"]
             },
             {
                 name: "Economic Stress",
@@ -549,6 +561,9 @@
             brent_crude: { label: "FRED: DCOILBRENTEU", url: "https://fred.stlouisfed.org/series/DCOILBRENTEU", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/ICEEUR-BRN1!/", liveLabel: "Trades live" },
             crack_spread: { label: "FRED (calculated)", url: "https://fred.stlouisfed.org/series/DCOILBRENTEU", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/NYMEX-RB1!/", liveLabel: "Gasoline trades live" },
             calendar_spread: { label: "Yahoo Finance", url: "https://finance.yahoo.com/quote/BZ=F/", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/ICEEUR-BRN1!/contracts/", liveLabel: "Contracts trade live" },
+            brent_wti_spread: { label: "FRED (calculated)", url: "https://fred.stlouisfed.org/series/DCOILWTICO", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/NYMEX-CL1!/", liveLabel: "WTI trades live" },
+            wti_crude: { label: "FRED: DCOILWTICO", url: "https://fred.stlouisfed.org/series/DCOILWTICO", freq: "Daily", liveUrl: "https://www.tradingview.com/symbols/NYMEX-CL1!/", liveLabel: "Trades live" },
+            us_gasoline: { label: "FRED: GASREGW", url: "https://fred.stlouisfed.org/series/GASREGW", freq: "Weekly" },
             industrial_production: { label: "FRED: INDPRO", url: "https://fred.stlouisfed.org/series/INDPRO", freq: "Monthly" },
             eu_natural_gas: { label: "FRED: PNGASEUUSDM", url: "https://fred.stlouisfed.org/series/PNGASEUUSDM", freq: "Monthly", liveUrl: "https://www.tradingview.com/symbols/ICEEUR-TFN1!/", liveLabel: "Trades live" },
             capacity_utilization: { label: "FRED: TCU", url: "https://fred.stlouisfed.org/series/TCU", freq: "Monthly" },
@@ -578,6 +593,24 @@
                 why: "This is the market's real-time vote on how tight physical supply is. Futures prices can be driven by speculation, but the calendar spread reflects actual urgency from refiners and traders who need physical barrels. A large positive spread means \"we need oil NOW and we'll pay extra for it.\"",
                 example_label: "March 2022 — Backwardation hits ~$5/barrel",
                 example: "Immediately after Russia's invasion of Ukraine, buyers scrambled to lock in physical barrels as they feared Russian oil would vanish from the market. The Brent calendar spread spiked to ~$5/barrel, its widest in over a decade. Traders were paying massive premiums for immediate delivery, signaling genuine panic about near-term supply."
+            },
+            brent_wti_spread: {
+                what: "The Brent-WTI spread is the price difference between Brent crude (the global benchmark, priced off North Sea oil) and WTI (West Texas Intermediate, the U.S. domestic benchmark). Normally Brent trades a few dollars above WTI because U.S. shale production keeps domestic supply plentiful.",
+                why: 'This spread tells you whether a global oil disruption is being absorbed by U.S. production or overwhelming it. When the Strait of Hormuz is threatened, Brent spikes because it prices the oil that actually transits the chokepoint. If WTI rises less, the spread widens — meaning global supply stress is outpacing what American shale can compensate for. A persistently wide spread signals that the crisis is genuinely global, not just a regional scare. <span class="spread-nuance">*Important nuance: a narrow spread when both benchmarks are elevated (Brent above $90, WTI above $85) does NOT mean things are calm — it means the crisis is hitting both markets equally, including the U.S. In that scenario, U.S. shale is no longer insulating the domestic economy.</span>',
+                example_label: "March 2022 — Ukraine invasion widens spread to ~$10",
+                example: "When Russia invaded Ukraine and Western sanctions disrupted global oil trade, Brent surged faster than WTI because European buyers scrambled for non-Russian barrels while U.S. refiners still had access to domestic crude. The spread widened from its usual $3-4 range to roughly $10, signaling that the disruption was disproportionately hitting global markets. The current Strait of Hormuz crisis has pushed the spread to $15-20+, far exceeding even the Ukraine shock."
+            },
+            wti_crude: {
+                what: "West Texas Intermediate is the U.S. domestic benchmark price for oil, set by trading on the New York Mercantile Exchange. While Brent reflects global supply and demand, WTI reflects conditions specific to the U.S. market — domestic shale production, Gulf Coast refinery demand, and Cushing, Oklahoma storage levels.",
+                why: "WTI gives you the American side of the oil story. During a Strait of Hormuz crisis, Brent spikes because it prices the oil that transits the chokepoint. WTI rises too (because oil is a global commodity), but typically by less — U.S. shale producers can ramp up to partially offset global shortfalls. Comparing WTI to Brent (via the spread card) tells you how much of the crisis U.S. production is absorbing.",
+                example_label: "April 2020 — WTI goes negative for the first time in history",
+                example: "On April 20, 2020, WTI futures for May delivery fell to -$37.63 per barrel — meaning sellers were paying buyers to take oil off their hands. COVID lockdowns had destroyed demand so fast that storage at Cushing, Oklahoma was nearly full. Traders holding expiring futures contracts faced the prospect of physical delivery with nowhere to put the oil. Brent fell too, but never went negative — highlighting how WTI can behave very differently from its global counterpart when U.S.-specific conditions diverge."
+            },
+            us_gasoline: {
+                what: "This is the average price Americans pay for a gallon of regular gasoline at the pump, surveyed weekly by the U.S. Energy Information Administration. It includes federal and state taxes, refining costs, and retail margins on top of the crude oil price.",
+                why: "This is the most visible economic impact of any oil crisis. Gasoline prices are posted on street corners and affect every household that drives. When gas crosses psychological thresholds ($4, $5/gallon), it dominates news cycles, changes consumer behavior, and becomes a political flashpoint. Gas prices typically lag crude by 1-2 weeks — so a spike in Brent or WTI today shows up at the pump next week.",
+                example_label: "June 2022 — National average hits $5.01/gallon",
+                example: "Following Russia's invasion of Ukraine and the resulting sanctions on Russian energy, U.S. gasoline prices hit an all-time record of $5.01 per gallon in June 2022. The spike was driven by both high crude prices and tight refining capacity (the crack spread simultaneously hit record levels). Consumer sentiment cratered, discretionary spending dropped, and gas prices became the dominant issue in midterm election polling."
             },
             industrial_production: {
                 what: "The Industrial Production Index measures the real (inflation-adjusted) output of U.S. factories, mines, and utilities. It's published monthly by the Federal Reserve and indexed so that 2017 = 100.",
@@ -807,7 +840,7 @@
             });
         }
 
-        function buildCard(key, metric) {
+        function buildCard(key, metric, allMetrics) {
             if (!metric) return `<div class="card-container"><div class="card-inner"><div class="card-front"><div class="card-name">Data unavailable</div></div></div></div>`;
 
             const zone = metric.zone || "unknown";
@@ -815,6 +848,16 @@
             const formattedVal = formatValue(metric.current_value, metric.unit);
             const canvasId = `chart-${key}`;
             const back = CARD_BACKS[key] || {};
+
+            // Asterisk for Brent-WTI spread when both benchmarks are elevated but spread is narrow
+            let spreadCaveat = "";
+            if (key === "brent_wti_spread" && allMetrics) {
+                const brentVal = allMetrics.brent_crude?.current_value;
+                const wtiVal = allMetrics.wti_crude?.current_value;
+                if (brentVal > 90 && wtiVal > 85 && zone === "green") {
+                    spreadCaveat = `<span class="spread-caveat">* see back of card</span>`;
+                }
+            }
 
             return `
                 <div class="card-container" onclick="this.classList.toggle('flipped')">
@@ -824,7 +867,7 @@
                                 <div class="card-name">${metric.name}<span class="card-freq">${source.freq || "—"}</span></div>
                                 <div class="zone-badge ${zone}"></div>
                             </div>
-                            <div class="card-value ${zone}">${formattedVal}</div>
+                            <div class="card-value ${zone}">${formattedVal}${spreadCaveat}</div>
                             <div class="card-unit">${metric.unit}${metric.contracts ? ` <span class="contract-label">&middot; ${metric.contracts}</span>` : ''}</div>
                             <div class="card-chart">
                                 <canvas id="${canvasId}"></canvas>
@@ -882,7 +925,7 @@
                     html += `<div class="category-subtitle">${cat.subtitle}</div>`;
                     html += `<div class="cards">`;
                     for (const key of cat.keys) {
-                        html += buildCard(key, data.metrics[key]);
+                        html += buildCard(key, data.metrics[key], data.metrics);
                     }
                     html += `</div></div>`;
                 }
