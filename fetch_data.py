@@ -7,6 +7,7 @@ Run locally or via GitHub Actions on a schedule.
 
 import os
 import json
+import time
 from datetime import datetime, timedelta, timezone
 import requests
 import yfinance as yf
@@ -239,14 +240,22 @@ def fetch_fred_series(series_id, years=5):
         "observation_start": start,
         "sort_order": "asc",
     }
-    for attempt in range(3):
+    # FRED occasionally returns 500 (transient) or 429 (rate-limited when we
+    # fire all series back-to-back). Retry both with exponential backoff
+    # rather than letting one throttled request kill the whole run.
+    max_attempts = 5
+    for attempt in range(max_attempts):
         resp = requests.get(url, params=params, timeout=15)
-        if resp.status_code == 500 and attempt < 2:
-            import time
-            time.sleep(2)
+        if resp.status_code in (429, 500) and attempt < max_attempts - 1:
+            wait = 2 ** attempt  # 1s, 2s, 4s, 8s
+            print(f"  FRED {resp.status_code} for {series_id}, retrying in {wait}s "
+                  f"(attempt {attempt + 1}/{max_attempts})")
+            time.sleep(wait)
             continue
         resp.raise_for_status()
         break
+    # Small pause so the next series doesn't immediately re-trigger throttling.
+    time.sleep(0.5)
     observations = resp.json().get("observations", [])
     return [
         {"date": obs["date"], "value": float(obs["value"])}

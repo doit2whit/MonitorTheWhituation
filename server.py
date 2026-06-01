@@ -268,8 +268,16 @@ def fetch_fred_series(series_id, years=5):
         "observation_start": start,
         "sort_order": "asc",
     }
-    resp = requests.get(url, params=params, timeout=15)
-    resp.raise_for_status()
+    # Retry transient 500s and rate-limit 429s with exponential backoff
+    # rather than letting one throttled request fail the request.
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        resp = requests.get(url, params=params, timeout=15)
+        if resp.status_code in (429, 500) and attempt < max_attempts - 1:
+            time.sleep(2 ** attempt)  # 1s, 2s, 4s, 8s
+            continue
+        resp.raise_for_status()
+        break
     observations = resp.json().get("observations", [])
 
     data = []
